@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+ <meta charset="UTF-8">
+ <title>Конвертер таблицы</title>
+ <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+ <!-- <h2>Конвертер строки</h2> -->
+
+ <label>Вставить строку из таблицы "Заказы" ⇨ Конвертировать ⇨ Добавить в таблицу "Сборки Китай":</label>
+ <textarea id="input"></textarea>
+
+ <div class="btns">
+  <button onclick="convert()">Конвертировать</button>
+  <button onclick="copyOut()">Копировать</button>
+ </div>
+
+ <!-- <label>Выходная строка:</label> -->
+ <textarea id="output" readonly></textarea>
+
+ <div id="toast"></div>
+
+ <script>
+  function convert() {
+   const input = document.getElementById("input").value.trim();
+   const cells = input.split("\t"); // делим по табуляции
+
+   const outputCells = [
+    cells[6].split("(")[0].trim(), // Акулы
+    cells[19], // Кит группа
+    "<добавить>", // Номер кит авто
+    cells[2], // Номер кит ТЗ
+    "<добавить>", // Номер ТЗ
+    (cells[6].match(/\(([^)]+)\)/) || [])[1] || "", // Клиент
+    "<добавить>", // Отправитель
+    "<добавить>", // Получатель
+    "", // Номер заявки клиента
+    "", // Перевозчик
+    "", // ТС
+    cells[7] + " - " + cells[8], // Маршрут
+    "<добавить>", // Диспозиция
+    "Маньчжурия", // Склад
+    "---", // Дата прибытия на склад в Китае
+    cells[8], // СВХ
+    "<добавить>", // Адрес СВХ
+    cells[9], // Довоз
+    "---", // Адрес довоза
+    "---", // Довоз отдельный / в той же авто
+    cells[10], // Штаб
+    cells[21], // Количество паллет / коробок
+    "<добавить>", // Размеры
+    "<добавить>", // Вес, кг
+    cells[11], // LDM по длине
+    cells[12], // LDM по весу
+    cells[12], // LDM расчетный в сборке
+    cells[16], // Общая ставка, USD
+    cells[20], // Своз по Китаю, CNY
+    "<добавить>", // Второе Плечо, USD
+    cells[5], // 	Профит, USD
+    "---", // Дата забора в Китае
+    "---", // Дата прибытия на границу
+    "---", // Дата заезда авто в Китай
+    cells[17] + " до <добавить>", // ДАТА ВЫГРУЗКИ!
+    cells[22], // Комментарий
+    "", // Заявка
+    "", // QR/Декларация
+    "", // Документы
+    "", // CMR
+    "", // Простой
+    "", // Оплата СНГ
+    "", // Оплата Китам
+    "" // Код ТН ВЭД
+   ];
+
+   const result = outputCells.join("\t");
+   document.getElementById("output").value = result;
+  }
+  function showToast(message, isError = false) {
+   const toast = document.getElementById("toast");
+   toast.textContent = message;
+   toast.className = "toast" + (isError ? " error" : "");
+   toast.classList.add("show");
+
+   setTimeout(() => {
+    toast.classList.remove("show");
+   }, 1000);
+  }
+  async function copyOut() {
+   const text = document.getElementById('output').value;
+   try {
+    await navigator.clipboard.writeText(text);
+    showToast("Скопировано!");
+   } catch {
+    showToast("Не удалось скопировать!", true);
+   }
+  }
+
+ </script>
+</body>
+
+</html>
