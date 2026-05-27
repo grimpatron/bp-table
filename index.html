@@ -3,102 +3,175 @@
 
 <head>
  <meta charset="UTF-8">
- <title>Конвертер таблицы</title>
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Конвертер таблиц [Заказы → Сборки Китай]</title>
  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
- <!-- <h2>Конвертер строки</h2> -->
+ <div class="container">
+  <div class="content">
+   <div class="section">
+    <div class="section-label">
+     <span>Вставьте строку из таблицы "Заказы"</span>
+    </div>
+    <textarea id="input" rows="4" class="input-area" placeholder="Вставьте строку с данными"></textarea>
+   </div>
 
- <label>Вставить строку из таблицы "Заказы" ⇨ Конвертировать ⇨ Добавить в таблицу "Сборки Китай":</label>
- <textarea id="input"></textarea>
+   <div class="btn-group">
+    <button class="btn-primary" onclick="convert()"> Конвертировать </button>
+    <button class="btn-secondary" onclick="copyOutput()"> Копировать результат </button>
+    <button class="btn-outline" onclick="clearAll()"> Очистить всё </button>
+   </div>
 
- <div class="btns">
-  <button onclick="convert()">Конвертировать</button>
-  <button onclick="copyOut()">Копировать</button>
+   <div class="section">
+    <div class="section-label">
+     <span>Результат для таблицы "Сборки Китай"</span>
+    </div>
+    <textarea id="output" rows="6" readonly class="output-area" placeholder="Результат конвертации ..."></textarea>
+   </div>
+  </div>
  </div>
-
- <!-- <label>Выходная строка:</label> -->
- <textarea id="output" readonly></textarea>
 
  <div id="toast"></div>
 
  <script>
+  // Конфигурация маппинга полей для лучшей поддерживаемости
+  const FIELD_MAPPING = {
+   7: { target: 0, transform: (val) => val.split('(')[0].trim(), desc: 'Акулы' },
+   21: { target: 1, transform: (val) => val || '', desc: 'Кит группа' },
+   4: { target: 3, transform: (val) => val || '', desc: 'Номер кит ТЗ' },
+   7: { target: 5, transform: (val) => (val.match(/\(([^)]+)\)/) || [])[1] || '', desc: 'Клиент' },
+   8: { target: 11, transform: (val, allCells) => `${val} - ${allCells[9] || ''}`, desc: 'Маршрут' },
+   9: { target: 14, transform: (val) => val || '', desc: 'СВХ' },
+   10: { target: 17, transform: (val) => val === "---" ? "без" : "да", desc: 'Довоз' },
+   10: { target: 18, transform: (val) => val.split('(')[0].trim(), desc: 'Адрес довоза' },
+   11: { target: 20, transform: (val) => val || '', desc: 'Штаб' },
+   23: { target: 21, transform: (val) => val || '', desc: 'Количество паллет / коробок' },
+   12: { target: 24, transform: (val) => val || '', desc: 'LDM по длине' },
+   13: { target: 25, transform: (val) => val || '', desc: 'LDM по весу' },
+   14: { target: 26, transform: (val) => val || '', desc: 'LDM расчетный в сборке' },
+   18: { target: 27, transform: (val) => val || '', desc: 'Общая ставка, USD' },
+   22: { target: 28, transform: (val) => val || '', desc: 'Своз по Китаю, CNY' },
+   6: { target: 30, transform: (val) => val || '', desc: 'Профит, USD' },
+   19: { target: 34, transform: (val) => `${val} до <добавить>`, desc: 'ДАТА ВЫГРУЗКИ!' },
+   27: { target: 35, transform: (val) => val || '', desc: 'Комментарий' }
+  };
+
+  // Шаблон выходных данных (порядок полей)
+  // const OUTPUT_TEMPLATE = [
+  //  "Акулы", "Кит группа", "Номе кит авто", "Номер кит ТЗ", "Номер ТЗ",
+  //  "Клиент", "Отправитель", "Получатель", "Номер заявки клиента", "Перевозчик",
+  //  "ТС", "Маршрут", "Диспозиция", "Склад", "Дата прибытия на склад в Китае",
+  //  "СВХ", "Адрес СВХ", "Довоз", "Адрес довоза", "Довоз отдельный / в той же авто",
+  //  "Штаб", "Количество паллет / коробок", "Размеры", "Вес, кг", "LDM по длине",
+  //  "LDM по весу", "LDM расчетный в сборке", "Общая ставка, USD", "Своз по Китаю, CNY",
+  //  "Второе Плечо, USD", "Профит, USD", "Дата забора в Китае", "Дата прибытия на границу",
+  //  "Дата заезда авто в Китай", "ДАТА ВЫГРУЗКИ!", "Комментарий", "Заявка", "QR/Декларация",
+  //  "Документы", "CMR", "Простой", "Оплата СНГ", "Оплата Китам", "Код ТН ВЭД"
+  // ];
+
+  // Значения по умолчанию для полей, которые не маппятся
+  const DEFAULT_VALUES = {
+   2: "<добавить>",      // Номе кит авто
+   4: "<добавить>",      // Номер ТЗ
+   6: "<добавить>",      // Отправитель
+   7: "<добавить>",      // Получатель
+   12: "---",            // Диспозиция
+   13: "Маньчжурия",     // Склад
+   14: "---",            // Дата прибытия на склад в Китае
+   16: "<добавить>",     // Адрес СВХ
+   19: "---",            // Довоз отдельный / в той же авто
+   22: "<добавить>",     // Размеры
+   23: "<добавить>",     // Вес, кг
+   29: "<добавить>",     // Второе Плечо, USD
+   31: "---",            // Дата забора в Китае
+   32: "---",            // Дата прибытия на границу
+   33: "---"             // Дата заезда авто в Китай
+  };
+
   function convert() {
    const input = document.getElementById("input").value.trim();
-   const cells = input.split("\t"); // делим по табуляции
 
-   const outputCells = [
-    cells[6].split("(")[0].trim(), // Акулы
-    cells[19], // Кит группа
-    "<добавить>", // Номер кит авто
-    cells[2], // Номер кит ТЗ
-    "<добавить>", // Номер ТЗ
-    (cells[6].match(/\(([^)]+)\)/) || [])[1] || "", // Клиент
-    "<добавить>", // Отправитель
-    "<добавить>", // Получатель
-    "", // Номер заявки клиента
-    "", // Перевозчик
-    "", // ТС
-    cells[7] + " - " + cells[8], // Маршрут
-    "---", // Диспозиция
-    "Маньчжурия", // Склад
-    "---", // Дата прибытия на склад в Китае
-    cells[8], // СВХ
-    "<добавить>", // Адрес СВХ
-    cells[9] == "---" ? "без" : "да", // Довоз
-    cells[9].split("(")[0].trim(), // Адрес довоза
-    "---", // Довоз отдельный / в той же авто
-    cells[10], // Штаб
-    cells[21], // Количество паллет / коробок
-    "<добавить>", // Размеры
-    "<добавить>", // Вес, кг
-    cells[11], // LDM по длине
-    cells[12], // LDM по весу
-    cells[13], // LDM расчетный в сборке
-    cells[16], // Общая ставка, USD
-    cells[20], // Своз по Китаю, CNY
-    "<добавить>", // Второе Плечо, USD
-    cells[5], // 	Профит, USD
-    "---", // Дата забора в Китае
-    "---", // Дата прибытия на границу
-    "---", // Дата заезда авто в Китай
-    cells[17] + " до <добавить>", // ДАТА ВЫГРУЗКИ!
-    cells[22], // Комментарий
-    "", // Заявка
-    "", // QR/Декларация
-    "", // Документы
-    "", // CMR
-    "", // Простой
-    "", // Оплата СНГ
-    "", // Оплата Китам
-    "" // Код ТН ВЭД
-   ];
+   if (!input) {
+    showToast("❌ Пожалуйста, вставьте данные для конвертации", true);
+    return;
+   }
 
+   const cells = input.split("\t");
+
+   if (cells.length < 28) {
+    showToast(`⚠️ Обнаружено ${cells.length} полей. Ожидается минимум 28. Проверьте формат данных.`, true);
+   }
+
+   // Инициализация выходного массива
+   // const outputCells = new Array(OUTPUT_TEMPLATE.length).fill("");
+   const outputCells = new Array(43).fill("");
+
+   // Заполнение значений по умолчанию
+   for (const [index, defaultValue] of Object.entries(DEFAULT_VALUES)) {
+    outputCells[parseInt(index)] = defaultValue;
+   }
+
+   // Применение маппинга полей
+   for (const [sourceIndex, mapping] of Object.entries(FIELD_MAPPING)) {
+    const sourceValue = cells[parseInt(sourceIndex)] || "";
+    const transformedValue = mapping.transform(sourceValue, cells);
+    if (transformedValue && outputCells[mapping.target] === "") {
+     outputCells[mapping.target] = transformedValue;
+    } else if (transformedValue) {
+     const defaultValue = DEFAULT_VALUES[mapping.target];
+     if (outputCells[mapping.target] === defaultValue) {
+      outputCells[mapping.target] = transformedValue;
+     }
+    }
+   }
+
+   // Обработка специальных полей
+   outputCells[0] = outputCells[0] || (cells[7]?.split('(')[0].trim() || "");
+   outputCells[5] = outputCells[5] || (cells[7]?.match(/\(([^)]+)\)/)?.[1] || "");
+
+   // Формирование результата
    const result = outputCells.join("\t");
    document.getElementById("output").value = result;
+
+   showToast("✅ Конвертация выполнена успешно!");
   }
+
   function showToast(message, isError = false) {
    const toast = document.getElementById("toast");
    toast.textContent = message;
-   toast.className = "toast" + (isError ? " error" : "");
+   toast.className = isError ? "error" : "";
    toast.classList.add("show");
 
    setTimeout(() => {
     toast.classList.remove("show");
-   }, 1000);
+   }, 2000);
   }
-  async function copyOut() {
-   const text = document.getElementById('output').value;
+
+  async function copyOutput() {
+   const output = document.getElementById("output").value;
+
+   if (!output) {
+    showToast("❌ Нет данных для копирования. Сначала выполните конвертацию.", true);
+    return;
+   }
+
    try {
-    await navigator.clipboard.writeText(text);
-    showToast("Скопировано!");
-   } catch {
-    showToast("Не удалось скопировать!", true);
+    await navigator.clipboard.writeText(output);
+    showToast("✅ Результат скопирован в буфер обмена!");
+   } catch (err) {
+    showToast("❌ Не удалось скопировать результат", true);
    }
   }
 
+  function clearAll() {
+   document.getElementById("input").value = "";
+   document.getElementById("output").value = "";
+   showToast("✅ Поля очищены");
+  }
  </script>
 </body>
 
 </html>
+<!-- 5: [40, v => v],  // 5 - откуда, 40 - куда, без изменений -->
