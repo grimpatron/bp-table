@@ -39,21 +39,21 @@
   // Конфигурация маппинга полей для лучшей поддерживаемости
   const FIELD_MAPPING = {
    7: { target: 0, transform: (val) => val.split('(')[0].trim(), desc: 'Акулы' },
-   22: { target: 1, transform: (val) => val || '', desc: 'Кит группа' },
+   23: { target: 1, transform: (val) => val || '', desc: 'Кит группа' },
    4: { target: 3, transform: (val) => val || '', desc: 'Номер кит ТЗ' },
    7: { target: 5, transform: (val) => (val.match(/\(([^)]+)\)/) || [])[1] || '', desc: 'Клиент' },
-   8: { target: 11, transform: (val, allCells) => `${val} - ${allCells[9] || ''}`, desc: 'Маршрут' },
+   8: { target: 11, transform: (val, allCells) => `${val} - ${allCells[9]} ${allCells[10].split('(')[0].trim() != '---' ? '- ' + allCells[10].split('(')[0].trim() : ''}`, desc: 'Маршрут' },
    9: { target: 15, transform: (val) => val || '', desc: 'СВХ' },
    10: { target: 17, transform: (val) => val === "---" ? "без" : "да", desc: 'Довоз' },
    10: { target: 18, transform: (val) => val.split('(')[0].trim(), desc: 'Адрес довоза' },
-   24: { target: 20, transform: (val) => val || '', desc: 'Штаб' },
-   25: { target: 21, transform: (val) => val || '', desc: 'Количество паллет / коробок' },
-   26: { target: 23, transform: (val) => val || '', desc: 'Вес' }, // новый
+   25: { target: 20, transform: (val) => val || '', desc: 'Штаб' },
+   26: { target: 21, transform: (val) => val || '', desc: 'Количество паллет / коробок' },
+   27: { target: 23, transform: (val) => val || '', desc: 'Вес' },
    11: { target: 24, transform: (val) => val || '', desc: 'LDM по длине' },
    12: { target: 25, transform: (val) => val || '', desc: 'LDM по весу' },
-   13: { target: 26, transform: (val) => val || '', desc: 'LDM расчетный в сборке' },
-   18: { target: 27, transform: (val) => val || '', desc: 'Общая ставка, USD' },
-   18: {
+   14: { target: 26, transform: (val) => val || '', desc: 'LDM расчетный в сборке' },
+   19: { target: 27, transform: (val) => val || '', desc: 'Общая ставка, USD' },
+   19: {
     target: 27,
     transform: (val, allCells) => {
      const totalRate = parseFloat(val) || 0;
@@ -62,18 +62,19 @@
     },
     desc: 'Общая ставка, USD, без овердрафта, курсовой разницы и страховки'
    },
-   23: { target: 28, transform: (val) => val || '', desc: 'Своз по Китаю, CNY' },
-   16: { target: 29, transform: (val) => val || '', desc: 'Дополнительные расходы' }, // новый
+   24: { target: 28, transform: (val) => val || '', desc: 'Своз по Китаю, CNY' },
+   17: { target: 29, transform: (val) => val || '', desc: 'Дополнительные расходы' },
+   20: { target: 30, transform: (val) => val || '', desc: 'Стоимость страхования, USD' },
    6: { target: 31, transform: (val) => val || '', desc: 'Профит, USD' },
-   27: { target: 32, transform: (val) => val || '', desc: 'Стоимость груза, USD' },
-   20: { target: 36, transform: (val) => `${val} до ...`, desc: 'ДАТА ВЫГРУЗКИ!' },
-   29: { target: 37, transform: (val) => val || '', desc: 'Комментарий' }
+   29: { target: 32, transform: (val) => val || '', desc: 'Стоимость груза, USD' },
+   21: { target: 36, transform: (val) => `(${val})`, desc: 'ДАТА ВЫГРУЗКИ!' },
+   31: { target: 37, transform: (val) => val || '', desc: 'Комментарий' }
   };
 
   // Значения по умолчанию для полей, которые не маппятся
   const DEFAULT_VALUES = {
    2: "",                // Номе кит авто
-   4: "<добавить>",      // Номер ТЗ Lotus
+   4: "",                // Номер ТЗ Lotus
    6: "",                // Отправитель
    7: "",                // Получатель
    12: "без статуса",    // Диспозиция
@@ -83,7 +84,6 @@
    19: "---",            // Довоз отдельный / в той же авто
    22: "",               // Размеры
    // 29: "<добавить>",     // Второе Плечо, USD
-   30: "",               // Страхование
    33: "---",            // Дата забора в Китае
    34: "---",            // Дата прибытия на границу
    35: "---"             // Дата заезда авто в Китай
@@ -222,3 +222,6 @@
 "Оплата Китам",
 "Код ТН ВЭД"
 -->
+
+
+<!-- Разобраться с чёрточкой в довозе -->
