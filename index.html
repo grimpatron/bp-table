@@ -57,7 +57,7 @@
     target: 27,
     transform: (val, allCells) => {
      const totalRate = parseFloat(val) || 0;
-     const extraCosts = parseFloat(allCells[16]) || 0;
+     const extraCosts = parseFloat(allCells[17]) || 0;
      return totalRate - extraCosts;
     },
     desc: 'Общая ставка, USD, без овердрафта, курсовой разницы и страховки'
@@ -164,6 +164,7 @@
 
   function clearAll() {
    document.getElementById("input").value = "";
+   document.getElementById("input").focus();
    document.getElementById("output").value = "";
    showToast("✅ Поля очищены");
   }
